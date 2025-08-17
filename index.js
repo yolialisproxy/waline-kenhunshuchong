@@ -2,6 +2,7 @@ const express = require('express');
 const { createApp } = require('@waline/server');
 const { put, get } = require('@vercel/blob');
 const fs = require('fs').promises;
+const path = require('path');
 
 const app = express();
 app.use(express.json({ limit: '1mb' }));
@@ -19,15 +20,17 @@ app.use((req, res, next) => {
 async function initDb() {
   const dbPath = '/tmp/waline.db';
   try {
-    const blob = await get('waline.db');
+    const { blob } = await get('waline.db', { access: 'public' });
     if (blob) {
       await fs.writeFile(dbPath, Buffer.from(await blob.arrayBuffer()));
       console.log('Restored DB from Vercel Blob');
     } else {
       console.log('No existing DB, creating new one');
+      await fs.writeFile(dbPath, Buffer.alloc(0)); // 创建空文件
     }
   } catch (e) {
-    console.error('Init DB error:', e);
+    console.error('Init DB error:', e.message);
+    await fs.writeFile(dbPath, Buffer.alloc(0)); // 强制创建
   }
 }
 
@@ -41,12 +44,13 @@ async function syncDb() {
       console.log('Synced DB to Vercel Blob');
     }
   } catch (e) {
-    console.error('Sync DB error:', e);
+    console.error('Sync DB error:', e.message);
   }
 }
 
 // 初始化Waline
-initDb().then(() => {
+async function startWaline() {
+  await initDb(); // 等待数据库初始化
   const waline = createApp({
     storage: 'sqlite',
     sqlite: { databasePath: '/tmp/waline.db' },
@@ -61,14 +65,18 @@ initDb().then(() => {
     next();
   });
 
-  // 测试路由
   app.get('/test', (req, res) => res.json({ status: 'ok' }));
 
-  // 错误处理
   app.use((err, req, res, next) => {
     console.error('Error:', err.stack);
     res.status(500).json({ error: 'Server Error', details: err.message });
   });
+}
 
-  module.exports = app;
+// 启动
+startWaline().catch(err => {
+  console.error('Waline init failed:', err);
+  app.use((req, res) => res.status(500).json({ error: 'Waline not initialized', details: err.message }));
 });
+
+module.exports = app;
