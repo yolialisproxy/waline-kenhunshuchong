@@ -6,10 +6,10 @@ const app = express();
 // 解析JSON请求
 app.use(express.json({ limit: '1mb' }));
 
-// 调试：打印请求信息
+// 调试请求
 app.use((req, res, next) => {
   console.log('Request:', req.method, req.url, req.body);
-  // 强制修复path undefined
+  // 修复path undefined
   if (req.body && !req.body.path && req.body.url) {
     req.body.path = new URL(req.body.url).pathname || '/default';
   }
