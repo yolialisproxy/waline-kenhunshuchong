@@ -31,11 +31,11 @@ async function initDb() {
     }
   } catch (e) {
     console.error('Init DB error:', e.message);
-    await fs.writeFile(dbPath, Buffer.alloc(0)); // 强制创建
+    await fs.writeFile(dbPath, Buffer.alloc(0));
   }
 }
 
-// 同步数据库到Blob
+// 同步数据库到 Blob
 async function syncDb() {
   const dbPath = '/tmp/waline.db';
   try {
@@ -49,7 +49,7 @@ async function syncDb() {
   }
 }
 
-// 初始化Waline
+// 初始化 Waline
 async function startWaline() {
   await initDb();
   try {
