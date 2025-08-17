@@ -11,12 +11,22 @@
     {
       "src": "index.cjs",
       "use": "@vercel/node"
+    },
+    {
+      "src": "index.js",
+      "use": "@vercel/node"
     }
   ],
   "rewrites": [
     {
       "source": "/((?!robots\\.txt$).*)",
       "destination": "index.cjs"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "index.js"
     }
   ]
 }
