@@ -2,7 +2,6 @@ const express = require('express');
 const { createApp } = require('@waline/server');
 const { put, get } = require('@vercel/blob');
 const fs = require('fs').promises;
-const path = require('path');
 
 const app = express();
 app.use(express.json({ limit: '1mb' }));
@@ -10,10 +9,12 @@ app.use(express.json({ limit: '1mb' }));
 // 调试请求
 app.use((req, res, next) => {
   console.log('Request:', req.method, req.url, req.body);
-  if (req.body && !req.body.path && req.body.url) {
-    req.body.path = new URL(req.body.url).pathname || '/default';
-  }
   next();
+});
+
+// 测试路由（优先注册）
+app.get('/test', (req, res) => {
+  res.json({ status: 'ok', message: 'Express is working' });
 });
 
 // 初始化数据库
@@ -26,7 +27,7 @@ async function initDb() {
       console.log('Restored DB from Vercel Blob');
     } else {
       console.log('No existing DB, creating new one');
-      await fs.writeFile(dbPath, Buffer.alloc(0)); // 创建空文件
+      await fs.writeFile(dbPath, Buffer.alloc(0));
     }
   } catch (e) {
     console.error('Init DB error:', e.message);
@@ -50,33 +51,35 @@ async function syncDb() {
 
 // 初始化Waline
 async function startWaline() {
-  await initDb(); // 等待数据库初始化
-  const waline = createApp({
-    storage: 'sqlite',
-    sqlite: { databasePath: '/tmp/waline.db' },
-    secureDomains: process.env.SECURE_DOMAINS?.split(',') || ['myblog.example.com']
-  });
-
-  app.use('/', waline);
-
-  // 每次请求后同步DB
+  await initDb();
+  try {
+    const waline = createApp({
+      storage: 'sqlite',
+      sqlite: { databasePath: '/tmp/waline.db' },
+      secureDomains: process.env.SECURE_DOMAINS?.split(',') || ['myblog.example.com']
+    });
+    app.use('/', waline);
+    console.log('Waline initialized successfully');
+  } catch (err) {
+    console.error('Waline init failed:', err.message);
+    app.use((req, res) => res.status(500).json({ error: 'Waline not initialized', details: err.message }));
+  }
   app.use(async (req, res, next) => {
     await syncDb();
     next();
-  });
-
-  app.get('/test', (req, res) => res.json({ status: 'ok' }));
-
-  app.use((err, req, res, next) => {
-    console.error('Error:', err.stack);
-    res.status(500).json({ error: 'Server Error', details: err.message });
   });
 }
 
 // 启动
 startWaline().catch(err => {
-  console.error('Waline init failed:', err);
-  app.use((req, res) => res.status(500).json({ error: 'Waline not initialized', details: err.message }));
+  console.error('Waline startup failed:', err.message);
+  app.use((req, res) => res.status(500).json({ error: 'Waline startup failed', details: err.message }));
+});
+
+// 错误处理
+app.use((err, req, res, next) => {
+  console.error('Error:', err.stack);
+  res.status(500).json({ error: 'Server Error', details: err.message });
 });
 
 module.exports = app;
