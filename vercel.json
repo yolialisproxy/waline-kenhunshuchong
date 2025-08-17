@@ -1,32 +1,15 @@
 {
-  "name": "comment",
-  "github": {
-    "silent": true
-  },
+  "version": 2,
   "builds": [
     {
-      "src": "robots.txt",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "index.cjs",
+      "src": "api/index.js",
       "use": "@vercel/node"
-    },
-    {
-      "src": "index.js",
-      "use": "@vercel/node"
-    }
-  ],
-  "rewrites": [
-    {
-      "source": "/((?!robots\\.txt$).*)",
-      "destination": "index.cjs"
     }
   ],
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "index.js"
+      "dest": "api/index.js"
     }
   ]
 }
