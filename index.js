@@ -2,7 +2,12 @@ const express = require('express');
 const { createApp } = require('@waline/server');
 
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: '1mb' })); // 确保解析JSON
+app.use((req, res, next) => {
+  console.log('Request Body:', req.body); // 调试Body
+  next();
+});
+
 const waline = createApp({
   storage: 'github',
   github: {
@@ -14,12 +19,10 @@ const waline = createApp({
 });
 
 app.use(waline);
+
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ error: 'Server Error' });
+  console.error('Error:', err.stack);
+  res.status(500).json({ error: 'Server Error', details: err.message });
 });
 
-const port = process.env.PORT || 3000;
-app.listen(port, () => {
-  console.log(`Waline server running on port ${port}`);
-});
+module.exports = app; // Vercel Serverless
