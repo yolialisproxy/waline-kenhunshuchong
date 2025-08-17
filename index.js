@@ -15,7 +15,7 @@ const waline = createApp({
     repo: process.env.GITHUB_REPO,
     token: process.env.GITHUB_TOKEN
   },
-  secureDomains: process.env.SECURE_DOMAINS?.split(',') || ['myblog.example.com']
+  secureDomains: process.env.SECURE_DOMAINS?.split(',') || ['kenhunshuchong.web.app']
 });
 
 app.use(waline);
