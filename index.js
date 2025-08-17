@@ -1,3 +1,6 @@
+const Waline = require('@waline/vercel');
+module.exports = Waline();
+
 const express = require('express');
 const { createApp } = require('@waline/server');
 const { put, get } = require('@vercel/blob');
